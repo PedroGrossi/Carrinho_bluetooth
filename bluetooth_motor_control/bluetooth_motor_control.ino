@@ -1,10 +1,10 @@
 #include <SoftwareSerial.h> // Lib to Bluetooth
 #include <AFMotor.h>        // Lib to motor shield
 
-#define pinRX = 2;         // Digital pin 2 (RX)
-#define pinTX = 3;         // Digital pin 3 (TX)
-#define pinMotor_R = 5     // PWM pin to motor right
-#define pinMotor_L = 6     // PWM pin to motor left
+#define pinRX 2            // Digital pin 2 (RX)
+#define pinTX 3            // Digital pin 3 (TX)
+#define pinMotor_R 5       // PWM pin to motor right
+#define pinMotor_L 6       // PWM pin to motor left
 
 int bth_data = 0;          // Variable to Bluetooth data 
 int z_direction = 0;       // direction in axis z
@@ -94,55 +94,64 @@ void direction(int bth_data, int *z_direction, int *y_direction, int *speed){
 void motor_control(int z_direction, int y_direction, int speed, AF_DCMotor motor_R, AF_DCMotor motor_L){
   if (z_direction == 1 && y_direction == 0){
     // Only go foward
-    motor.run(FORWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed);
     motor_L.setSpeed(speed);
     delay(10);
   } else if (z_direction == -1 && y_direction == 0){
     // Only go backward
-    motor.run(BACKWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed);
     motor_L.setSpeed(speed);
     delay(10);
   } else if (z_direction == 0 && y_direction == 1){
     // Only go right
-    motor.run(FORWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed*0.2); // Set speed to 20%
     motor_L.setSpeed(speed*0.8); // Set speed to 80%
     delay(10);
   } else if (z_direction == 0 && y_direction == -1){
     // Only go left
-    motor.run(FORWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed*0.8); // Set speed to 80%
     motor_L.setSpeed(speed*0.2); // Set speed to 20%
     delay(10);
   } else if (z_direction == 1 && y_direction == 1){
     // Go foward and right
-    motor.run(FORWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed*0.4); // Set speed to 40%
     motor_L.setSpeed(speed*0.6); // Set speed to 60%
     delay(10);
   } else if (z_direction == 1 && y_direction == -1){
     // Go foward and left
-    motor.run(FORWARD);
+    motor_R.run(FORWARD);
+    motor_L.run(FORWARD);
     motor_R.setSpeed(speed*0.6); // Set speed to 60%
     motor_L.setSpeed(speed*0.4); // Set speed to 40%
     delay(10);
   } else if (z_direction == -1 && y_direction == 1){
     // Go backward and right
-    motor.run(BACKWARD);
+    motor_R.run(BACKWARD);
+    motor_L.run(BACKWARD);
     motor_R.setSpeed(speed*0.4); // Set speed to 40%
     motor_L.setSpeed(speed*0.6); // Set speed to 60%
     delay(10);
   } else if (z_direction == -1 && y_direction == -1){
     // Go backward and left
-    motor.run(BACKWARD);
+    motor_R.run(BACKWARD);
+    motor_L.run(BACKWARD);
     motor_R.setSpeed(speed*0.6); // Set speed to 60%
     motor_L.setSpeed(speed*0.4); // Set speed to 40%
     delay(10);
   } else {
     // stop
-    motor.run(RELEASE);
+    motor_R.run(RELEASE);
+    motor_L.run(RELEASE);
     delay(10);
   }
 }
