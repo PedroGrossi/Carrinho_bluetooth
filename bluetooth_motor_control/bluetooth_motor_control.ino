@@ -1,157 +1,117 @@
 #include <SoftwareSerial.h> // Lib to Bluetooth
-#include <AFMotor.h>        // Lib to motor shield
 
-#define pinRX 2            // Digital pin 2 (RX)
-#define pinTX 3            // Digital pin 3 (TX)
-#define pinMotor_R 5       // PWM pin to motor right
-#define pinMotor_L 6       // PWM pin to motor left
+#define pinRX 2             // Digital pin 2 (RX)
+#define pinTX 3             // Digital pin 3 (TX)
+#define pinMotor1_1 5       // PWM 1 - motor 1
+#define pinMotor1_2 6       // PWM 2 - motor 1
+#define pinMotor2_1 10      // PWM 1 - motor 2
+#define pinMotor2_2 11      // PWM 2 - motor 2
 
-int bth_data = 0;          // Variable to Bluetooth data 
-int z_direction = 0;       // direction in axis z
-int y_direction = 0;       // direction in axis y
-int speed = 0;             // speed control
+char bth_data = 0;          // Variable to Bluetooth data
+int speed = 255;            // Max speed
 
+// Motor Class
+class DCMotor {  
+  int spd = 255, pin1, pin2;
+  
+  public:  
+  
+    void Pinout(int in1, int in2){ // Method for declaring motor pinout
+      pin1 = in1;
+      pin2 = in2;
+      pinMode(pin1, OUTPUT);
+      pinMode(pin2, OUTPUT);
+      }       void Speed(int in1){ // Method for saving motor speed
+      spd = in1;
+      }     
+    void Forward(){ // Method to go forward
+      analogWrite(pin1, spd);
+      digitalWrite(pin2, LOW);
+      }   
+    void Backward(){ // Method to go backward
+      digitalWrite(pin1, LOW);
+      analogWrite(pin2, spd);
+      }
+    void Stop(){ // Method to stop
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+      }
+   };
+
+DCMotor Motor1, Motor2;                 // Motor objects 
 SoftwareSerial bluetooth(pinRX, pinTX); // Pins to emulate serial
 
-AF_DCMotor motor_R(pinMotor_R);     // Motor R -> right
-AF_DCMotor motor_L(pinMotor_L);     // Motor L -> left
-
-void setup(); // Setup for code
-void loop(); // Main loop
-void direction(int bth_data, int *z_direction, int *y_direction, int *speed); // Verify selected direction 
-void motor_control(int z_direction, int y_direction, int speed, AF_DCMotor motor_R, AF_DCMotor motor_L); // Set motor speed based in selected direction
-
 void setup() {
-  Serial.begin(9600);      // Init serial communication
-
-  bluetooth.begin(9600);   // Init bluetooth serial
-
-  motor_R.run(RELEASE);    // Stop motor R
-  motor_L.run(RELEASE);    // Stop motor L
-
-  delay(100);
+  Serial.begin(9600);
+  bluetooth.begin(9600);
+  Motor1.Pinout(pinMotor1_1,pinMotor1_2); // Set motor pins.
+  Motor2.Pinout(pinMotor2_1,pinMotor2_2); 
 }
-
 void loop() {
-  // If bluetooth is available
-  if(bluetooth.available()){
-    bth_data = bluetooth.read(); // Receives bluetooth value
-
-    // Set speed -> in this moment speed will be hardcoded
-    speed = 191; // almost 75% of max speed -> will me our max speed for now
-
-    // Verify what to do -> documentation = values from app (Bluetooth RC Controller)
-    // Directions
-    direction(bth_data, &z_direction, &y_direction, &speed);
-  }
-
-  // Control motors intensity
-  motor_control(z_direction, y_direction, speed, motor_R, motor_L);
+  while(bluetooth.available()){
+    bth_data = bluetooth.read();
+    if (bth_data != 13 && bth_data != 10){
+      // Control motors intensity
+      motor_control(bth_data, speed, Motor1, Motor2);
+    }
+    delay(100);
+    }
 }
 
-void direction(int bth_data, int *z_direction, int *y_direction, int *speed){
-  switch (bth_data) {
-      case 'F': // Forward
-        *z_direction = 1; // Move only axis z -> positive direction
-        *y_direction = 0;
-        break;
-      case 'B': // Backward
-        *z_direction = -1; // Move only axis z -> negative direction 
-        *y_direction = 0;
-        break;
-      case 'L': // Left
-        *z_direction = 0; // Move only axis y -> positive direction
-        *y_direction = 1;
-        break;
-      case 'R': // Right
-        *z_direction = 0; // Move only axis y -> negative direction
-        *y_direction = -1;
-        break;
-      case 'G': // Forward Left
-        *z_direction = 1; // Move axis z and y -> positive direction
-        *y_direction = 1;
-        break;
-      case 'I': // Forward Right
-        *z_direction = 1; // Move axis z and y -> z = positive | y = negative
-        *y_direction = -1;
-        break;
-      case 'H': // BackLeft
-        *z_direction = -1; // Move axis z and y -> z = negative | y = positive
-        *y_direction = 1;
-        break;
-      case 'J': // BackRight
-        *z_direction = -1; // Move axis z and y -> negative direction
-        *y_direction = -1;
-        break;
-      default:
-        *z_direction = 0; // Stop
-        *y_direction = 0;
-        *speed = 0;
-        break;
-  }
-}
-
-void motor_control(int z_direction, int y_direction, int speed, AF_DCMotor motor_R, AF_DCMotor motor_L){
-  if (z_direction == 1 && y_direction == 0){
+void motor_control(char bth_data, int speed, DCMotor Motor1, DCMotor Motor2){
+  if (bth_data == 'F'){
     // Only go foward
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed);
-    motor_L.setSpeed(speed);
+    Motor1.Speed(speed); // Set motors speed
+    Motor2.Speed(speed);
+    Motor1.Forward(); // Command to go forward 
+    Motor2.Forward();
     delay(10);
-  } else if (z_direction == -1 && y_direction == 0){
+  } else if (bth_data == 'B'){
     // Only go backward
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed);
-    motor_L.setSpeed(speed);
+    Motor1.Speed(speed); // Set motors speed
+    Motor2.Speed(speed);
+    Motor1.Backward(); // Command to go backward 
+    Motor2.Backward();
     delay(10);
-  } else if (z_direction == 0 && y_direction == 1){
-    // Only go right
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed*0.2); // Set speed to 20%
-    motor_L.setSpeed(speed*0.8); // Set speed to 80%
-    delay(10);
-  } else if (z_direction == 0 && y_direction == -1){
+  }else if (bth_data == 'L'){
     // Only go left
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed*0.8); // Set speed to 80%
-    motor_L.setSpeed(speed*0.2); // Set speed to 20%
-    delay(10);
-  } else if (z_direction == 1 && y_direction == 1){
-    // Go foward and right
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed*0.4); // Set speed to 40%
-    motor_L.setSpeed(speed*0.6); // Set speed to 60%
-    delay(10);
-  } else if (z_direction == 1 && y_direction == -1){
-    // Go foward and left
-    motor_R.run(FORWARD);
-    motor_L.run(FORWARD);
-    motor_R.setSpeed(speed*0.6); // Set speed to 60%
-    motor_L.setSpeed(speed*0.4); // Set speed to 40%
-    delay(10);
-  } else if (z_direction == -1 && y_direction == 1){
-    // Go backward and right
-    motor_R.run(BACKWARD);
-    motor_L.run(BACKWARD);
-    motor_R.setSpeed(speed*0.4); // Set speed to 40%
-    motor_L.setSpeed(speed*0.6); // Set speed to 60%
-    delay(10);
-  } else if (z_direction == -1 && y_direction == -1){
-    // Go backward and left
-    motor_R.run(BACKWARD);
-    motor_L.run(BACKWARD);
-    motor_R.setSpeed(speed*0.6); // Set speed to 60%
-    motor_L.setSpeed(speed*0.4); // Set speed to 40%
-    delay(10);
-  } else {
-    // stop
-    motor_R.run(RELEASE);
-    motor_L.run(RELEASE);
-    delay(10);
+    Motor1.Speed(speed*0.2); // Set motors speed
+    Motor2.Speed(speed*0.8);
+    Motor1.Forward(); // Command to go forward 
+    Motor2.Forward();
+  }else if (bth_data == 'R'){
+    // Only go right
+    Motor1.Speed(speed*0.8); // Set motors speed
+    Motor2.Speed(speed*0.2);
+    Motor1.Forward(); // Command to go forward 
+    Motor2.Forward();
+  }else if (bth_data == 'G'){
+    // Forward Left
+    Motor1.Speed(speed*0.6); // Set motors speed
+    Motor2.Speed(speed*0.8);
+    Motor1.Forward(); // Command to go forward 
+    Motor2.Forward();
+  }else if (bth_data == 'I'){
+    // Forward Right
+    Motor1.Speed(speed*0.8); // Set motor speed
+    Motor2.Speed(speed*0.6);
+    Motor1.Forward(); // Command to go forward 
+    Motor2.Forward();
+  }else if (bth_data == 'H'){
+    // BackLeft
+    Motor1.Speed(speed*0.8); // Set motor speed
+    Motor2.Speed(speed*0.6);
+    Motor1.Backward(); // Command to go backward 
+    Motor2.Backward();
+  }else if (bth_data == 'J'){
+    // BackRight
+    Motor1.Speed(speed*0.6); // Set motor speed
+    Motor2.Speed(speed*0.8);
+    Motor1.Backward(); // Command to go backward 
+    Motor2.Backward();
+  }else {
+    // Stop
+    Motor1.Stop(); // Command to stop
+    Motor2.Stop();
   }
 }
